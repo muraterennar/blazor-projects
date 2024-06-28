@@ -4,7 +4,11 @@
 @inject ISpinnerService spinnerService
 
 
-<CustomSpinner />
+@if(IsLoading)
+{
+    <CustomSpinner />
+}
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -27,6 +31,7 @@
     protected override void OnInitialized()
     {
         spinnerService.OnSpinnerChanged += HandleSpinnerChanged;
+
     }
 
     private bool IsLoading { get; set; }

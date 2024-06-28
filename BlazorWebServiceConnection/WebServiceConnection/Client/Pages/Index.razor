@@ -1,0 +1,19 @@
+﻿@page "/"
+@using WebServiceConnection.Client
+
+
+<form class="mt-5" @onsubmit="()=> HesaplaIstegi(Sayi1, Sayi2)">
+    <div class="mb-3">
+        <label for="exampleInputEmail1" class="form-label">Sayı 1</label>
+        <input type="number" class="form-control" @bind="@Sayi1" id="exampleInputEmail1" aria-describedby="emailHelp">
+    </div>
+    <div class="mb-3">
+        <label for="exampleInputPassword1" class="form-label">Sayı 2</label>
+        <input type="number" class="form-control" @bind="@Sayi2" id="exampleInputPassword1">
+    </div>
+
+    <div id="emailHelp" class="form-text">@sonuc</div>
+
+
+    <button type="submit" class="btn btn-primary">Hesapla</button>
+</form>

@@ -1,0 +1,306 @@
+﻿@page "/treeview"
+@using System.Collections.Generic
+@using System.Drawing
+
+<style>
+
+    .category-div {
+        color: #000;
+        font-size: 20px;
+        cursor: pointer;
+        border-top: 1px solid #ccc;
+    }
+
+    .category {
+        padding: 2px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 20px;
+        cursor: pointer;
+        border-top: 1px solid #ccc;
+    }
+
+        .category:hover {
+            background-color: #F8F4E3;
+        }
+
+    .category-link {
+        text-decoration: none;
+        color: #000;
+    }
+
+    .category-sub {
+        padding: 2px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 16px;
+        cursor: pointer;
+        border-top: 1px solid #ccc;
+        margin-left: 5px;
+    }
+
+        .category-sub:hover {
+            background-color: #F8F4E3;
+        }
+
+    }
+</style>
+
+
+<h3>TreeView</h3>
+
+
+@if(Categories != null)
+{
+    <div>
+        <!-- Ana kategorileri listeler -->
+        @foreach(var category in Categories.Where(c => c.kategoriustid == 0))
+        {
+            <div>
+                <span class="category" @onclick="() => ToggleCategory(category)">
+                    <!-- Kategoriye tıklandığında ToggleCategory metodu çağrılır -->
+                    <a class="category-link" href="kategori/@category.kategorikod.Split(" ")[0]">
+                        @category.kategoriadi  <!-- Kategori adı gösterilir -->
+                    </a>
+
+                    <!-- Kategori açıksa ve alt kategorileri varsa listeler -->
+                    @if(category.kategorialtid == 1)
+                    {
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 20 20">
+                            <path d="M4.646 5.646a.5.5 0 0 1 .708 0L8 8.293l2.646-2.647a.5.5 0 1 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z" />
+                        </svg>
+                    }
+                </span>
+
+                <!-- Kategori açıksa ve alt kategorileri varsa listeler -->
+                @if(IsCategoryOpen(category) && HasChildren(category.id))
+                {
+                    <!-- Alt kategorilere "Tümünü Seç" seçeneğini ekler -->
+                    @if(category.kategorialtid == 1 && GetChildren(category.kategoriustid).Count() > 1)
+                    {
+                        <div class="ms-2">
+                            <a class="fw-bold category-link" @onclick="()=> SelectAll(category)">Tümünü Seç</a>
+                        </div>
+                    }
+                    <!-- Alt kategorileri listeler -->
+                    <div class="ms-2">
+                        @RenderChildren(category.id)
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public List<Category> Categories { get; set; }
+    [Parameter]
+    public Color ColorCode { get; set; }
+
+
+    Dictionary<int, bool> CategoryStates = new Dictionary<int, bool>(); /* Kategorilerin durumunu tutar */
+    Dictionary<int, Dictionary<int, bool>> SubCategoryStates = new Dictionary<int, Dictionary<int, bool>>();
+    private int expandedCategoryId = -1; // Başlangıçta hiçbiri açık değil
+
+
+    protected override void OnInitialized()
+    {
+        // Bu veriler yerine kendi veri kaynağınızdan kategori listesini almalısınız.
+        Categories = new List<Category>
+        {
+            new Category { id = 1, kategorikod="001", kategoriadi = "Elektronik", kategoriustid = 0, kategorialtid = 1 },
+            new Category { id = 2, kategorikod="001 01", kategoriadi = "Telefon", kategoriustid = 1, kategorialtid = 1 },
+            new Category { id = 3, kategorikod="001 02", kategoriadi = "Bilgisayar", kategoriustid = 1, kategorialtid = 1 },
+            new Category { id = 4, kategorikod="001 03", kategoriadi = "Kamera", kategoriustid = 1, kategorialtid = 0 },
+            new Category { id = 5, kategorikod="001 01 01", kategoriadi = "Akıllı Telefon", kategoriustid = 2, kategorialtid = 0 },
+            new Category { id = 6, kategorikod="001 02 01", kategoriadi = "Laptop", kategoriustid = 3, kategorialtid = 1 },
+            new Category { id = 7, kategorikod="001 02 02", kategoriadi = "Masaüstü", kategoriustid = 3, kategorialtid = 1 },
+            new Category { id = 8, kategorikod="001 02 01 01", kategoriadi = "Acer", kategoriustid = 6, kategorialtid = 0 },
+            new Category { id = 9, kategorikod="001 02 01 02", kategoriadi = "Asus", kategoriustid = 6, kategorialtid = 0 },
+            new Category { id = 10,kategorikod="001 02 02 01", kategoriadi = "Dell", kategoriustid = 7, kategorialtid = 1 },
+            new Category { id = 11,kategorikod="001 02 02 01 01", kategoriadi = "GTX 3060", kategoriustid = 10, kategorialtid = 0 },
+            new Category { id = 12, kategorikod="002", kategoriadi = "Kombi", kategoriustid = 0, kategorialtid = 0 },
+            new Category { id = 13, kategorikod="003", kategoriadi = "Klima", kategoriustid = 0, kategorialtid = 1 },
+            new Category { id = 14, kategorikod="003 01", kategoriadi = "Klima 01", kategoriustid = 13, kategorialtid = 0 },
+            new Category { id = 15, kategorikod="003 02", kategoriadi = "Klima 02", kategoriustid = 13, kategorialtid = 0 },
+            new Category { id = 16, kategorikod="004", kategoriadi = "Ana Kategori 4", kategoriustid = 0, kategorialtid = 1 },
+            new Category { id = 17, kategorikod="004 01", kategoriadi = "Ana Kategori 4 - 1", kategoriustid = 16, kategorialtid = 0 },
+            new Category { id = 18, kategorikod="004 02", kategoriadi = "Ana Kategori 4 - 2", kategoriustid = 16, kategorialtid = 1 },
+            new Category { id = 19, kategorikod="004 02 01", kategoriadi = "Ana Kategori 4 - 2 - 1", kategoriustid = 18, kategorialtid = 0 },
+        };
+
+    }
+
+
+    bool HasChildren(int parentId) =>
+           Categories.Any(c => c.kategoriustid == parentId); /* Bir kategorinin alt kategorileri var mı kontrol eder */
+
+    IEnumerable<Category> GetChildren(int parentId) =>
+        Categories.Where(c => c.kategoriustid == parentId); /* Bir kategorinin alt kategorilerini getirir */
+
+    RenderFragment RenderChildren(int parentId) /* Alt kategorileri görüntüler */
+    {
+        return builder =>
+        { // RenderFragment döndüren bir lambda fonksiyonu başlatır. Builder, UI bileşenlerini oluşturmak için kullanılır.
+
+            foreach(var childCategory in GetChildren(parentId))
+            { // Belirli bir üst kategorinin alt kategorileri üzerinde döngü oluşturur.
+
+                builder.OpenElement(0, "div"); // Bir <div> öğesi başlatır.
+                builder.AddAttribute(1, "class", "category-div");
+
+                builder.OpenElement(2, "span"); // Bir <span> öğesi başlatır.
+
+                builder.AddAttribute(3, "style", "cursor:pointer"); // Span öğesine bir stili ekler.
+
+                builder.AddAttribute(4, "class", "category-sub"); // Span öğesine bir sınıf ekler.
+
+                builder.AddAttribute(5, "onclick", EventCallback.Factory.Create(this, () => ToggleSubCategory(childCategory))); // Tıklama olayı ekler ve ToggleCategory metodunu çağırır.
+
+                builder.OpenElement(6, "a"); // Bir <a> öğesi başlatır.
+                builder.AddAttribute(7, "href", $"kategori/{childCategory.kategorikod.Split(" ")[0][1]}");
+                builder.AddAttribute(8, "class", "category-link");
+                builder.AddContent(9, childCategory.kategoriadi); // Span öğesine kategori adını ekler.
+                builder.CloseElement(); // </a> öğesini kapatır.
+                builder.CloseElement(); // </span> öğesini kapatır.
+
+                if(IsCategoryOpen(childCategory) && HasChildren(childCategory.id))
+                { // Alt kategorilerin varlığını ve açık olup olmadığını kontrol eder.
+
+                    if(childCategory.kategorialtid == 1 && GetChildren(childCategory.kategoriustid).Count() > 0)
+                    { // Alt kategorilerin varlığını ve birden fazla olup olmadığını kontrol eder.
+
+                        builder.OpenElement(10, "a"); // Bir <span> öğesi başlatır.
+
+                        builder.AddAttribute(11, "href", $"kategori/{childCategory.kategorikod.Split(" ")[0]}");
+
+                        builder.AddAttribute(12, "style", "cursor:pointer; font-weight:600;"); // Span öğesine bir stili ekler.
+
+                        builder.AddAttribute(13, "class", "all-category ms-2"); // Span öğesine bir sınıf ekler.
+
+                        builder.AddAttribute(14, "onclick", EventCallback.Factory.Create(this, () => SelectAll(childCategory))); // Tıklama olayı ekler ve SelectAll metodunu çağırır.
+
+                        builder.AddContent(15, "Tümü Seç"); // Span öğesine "Tümü Seç" içeriğini ekler.
+
+                        builder.CloseElement(); // </span> öğesini kapatır.
+
+                    }
+
+                    builder.OpenElement(16, "span"); // Bir <span> öğesi başlatır.
+
+                    builder.AddContent(17, RenderChildren(childCategory.id)); // Alt kategorileri içeren bir RenderFragment'i <ul> öğesine ekler.
+
+
+                    builder.CloseElement(); // </div> öğesini kapatır.
+                }
+
+
+                builder.CloseElement(); // </div> öğesini kapatır.
+
+            }
+
+        }; // Lambda fonksiyonunu sonlandırır.
+
+    }
+
+    void ToggleCategory(Category category)
+    {
+        // Tıklanan kategorinin durumunu tersine çevir
+        CategoryStates[category.id] = !IsCategoryOpen(category);
+
+        // Eğer tıklanan kategori bir ana kategori ise
+        if(category.kategoriustid == 0)
+        {
+            // Diğer ana kategorilerin durumunu kapat
+            foreach(var otherCategory in Categories.Where(c => c.id != category.id && c.kategoriustid == 0))
+            {
+                CategoryStates[otherCategory.id] = false;
+                // Kapanan ana kategorinin alt kategorilerinin durumunu kapat
+                UpdateChildCategoryStates(otherCategory, false);
+            }
+        }
+        else
+        {
+            // Tıklanan kategori bir alt kategori ise
+            // Kategorinin üst kategorisini bul
+            var parentCategory = Categories.FirstOrDefault(c => c.id == category.kategoriustid);
+
+            // Tıklanan kategorinin üst kategorisi başka bir ana kategori ise
+            if(parentCategory != null && parentCategory.kategoriustid == 0)
+            {
+                // Diğer ana kategorilerin durumunu kapat
+                foreach(var otherCategory in Categories.Where(c => c.id != parentCategory.id && c.kategoriustid == 0))
+                {
+                    CategoryStates[otherCategory.id] = false;
+                    // Kapanan ana kategorinin alt kategorilerinin durumunu kapat
+                    UpdateChildCategoryStates(otherCategory, true);
+                }
+            }
+            else
+            {
+                // Tıklanan kategori bir alt kategori ise
+                // Kategorinin alt kategorilerinin durumunu güncelle
+                UpdateChildCategoryStates(category, IsCategoryOpen(category));
+            }
+        }
+    }
+
+    void ToggleSubCategory(Category category)
+    {
+        // Tıklanan alt kategorinin durumunu tersine çevir
+        CategoryStates[category.id] = !IsCategoryOpen(category);
+
+        // Eğer tıklanan kategori bir ana kategori değilse
+        if(category.kategoriustid != 0)
+        {
+            // Kategorinin açık olduğu durumda diğer alt kategorileri kapat
+            if(IsCategoryOpen(category))
+            {
+                var parentCategory = Categories.FirstOrDefault(c => c.id == category.kategoriustid);
+                if(parentCategory != null)
+                {
+                    // Kapanan alt kategorinin diğer alt kategorilerinin durumunu kapat
+                    foreach(var otherChildCategory in GetChildren(parentCategory.id).Where(c => c.id != category.id))
+                    {
+                        UpdateChildCategoryStates(otherChildCategory, false);
+                    }
+                }
+            }
+        }
+    }
+
+    void UpdateChildCategoryStates(Category category, bool isOpen)
+    {
+        // Kategorinin durumunu ayarla
+        CategoryStates[category.id] = isOpen;
+
+        // Kategorinin alt kategorilerini kontrol et
+        foreach(var childCategory in Categories.Where(c => c.kategoriustid == category.id))
+        {
+            UpdateChildCategoryStates(childCategory, isOpen);
+        }
+    }
+
+    bool IsCategoryOpen(Category category)
+    {
+        if(!CategoryStates.ContainsKey(category.id))
+        {
+            CategoryStates.Add(category.id, false);
+        }
+        return CategoryStates[category.id];
+    }
+
+    void SelectAll(Category category)  /* Tüm alt kategorileri seçer ve her biri için link işlemi */
+    {
+        Console.WriteLine(category);
+    }
+
+    private MarkupString GetSvgIcon() /* SVG ikonunu döndürür */
+    {
+        return (MarkupString) @"<svg xmlns=""http://www.w3.org/2000/svg"" width=""20"" height=""20"" fill=""currentColor"" class=""bi bi-chevron-down"" viewBox=""0 0 16 16""><path d=""M4.646 5.646a.5.5 0 0 1 .708 0L8 8.293l2.646-2.647a.5.5 0 1 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z"" /></svg>";
+    }
+
+}

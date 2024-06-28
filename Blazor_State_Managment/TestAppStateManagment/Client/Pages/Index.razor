@@ -1,0 +1,70 @@
+﻿@page "/"
+@inject HttpClient httpClient
+<PageTitle>Index</PageTitle>
+<h1>Hello, world!</h1>
+<Toolbar />
+
+
+
+<SurveyPrompt Title="How is Blazor working for you?" />
+@code
+{
+    [Inject]
+    AppStateManager appState { get; set; }
+
+    public User User { get; set; } = new User();
+
+    // void SetState()
+    // {
+    //     appState.SetState(this);
+
+    //     if(User != null)
+    //     {
+    //         Task.FromResult(PostUser(User));
+    //     }
+
+    //     StateHasChanged();
+    // }
+
+    // async Task PostUser(User user)
+    // {
+    //     User setUser = new User
+    //         {
+    //             user_id = user.user_id,
+    //             full_name = user.full_name,
+    //             email = user.email,
+    //             username = user.username
+    //         };
+
+    //     var response = await httpClient.PostAsJsonAsync("https://localhost:7197/api/Users/update", setUser);
+
+    //     if(response.IsSuccessStatusCode)
+    //     {
+    //         User getUser = await response.Content.ReadFromJsonAsync<User>();
+
+    //         if(getUser != null)
+    //         {
+    //             // STATE 'İ GÜNCELLEMEK İÇİN (Direk State'e Veri Ekliyoruz):
+    //             // appState.SetCategoryState(this, getUser);
+
+    //             // STATE 'İ GÜNCELLEMEK İÇİN (Component'e Veri Ekliyoruz):
+    //             var getRefreshUser = await httpClient.PostAsJsonAsync("https://localhost:7197/api/Users/getall?startPage=0&pageSize=50", "");
+
+    //             if(getRefreshUser.IsSuccessStatusCode)
+    //             {
+    //                 appState.Users = await response.Content.ReadFromJsonAsync<List<User>>();
+    //             }
+
+    //             StateHasChanged();
+    //         }
+    //         else
+    //         {
+    //             Console.WriteLine("Received user data is null.");
+    //         }
+    //     }
+    //     else
+    //     {
+    //         Console.WriteLine("Error occurred: " + response.StatusCode);
+    //     }
+    // }
+}

@@ -1,0 +1,64 @@
+﻿@page "/"
+@using LocalStorage.Client.Servisler.State
+@using LocalStorage.Shared
+@using System.Text.Json
+@inject HttpClient Http
+@inject Blazored.LocalStorage.ILocalStorageService localStorage;
+
+
+<h3>Form</h3>
+
+<form @onsubmit="HandleSubmit">
+    <div class="mb-3">
+        <label for="exampleInputEmail1" class="form-label">Email address</label>
+        <input type="text" class="form-control" id="exampleInputEmail1" @bind="Name">
+        <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
+    </div>
+    <div class="mb-3">
+        <label for="exampleInputPassword1" class="form-label">Password</label>
+        <input type="password" class="form-control" id="exampleInputPassword1" @bind="Password">
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="exampleCheck1" @bind="IsChecked">
+        <label class="form-check-label" for="exampleCheck1">Check me out</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+@code {
+    private string Name { get; set; }
+    private string Password { get; set; }
+    private bool IsChecked { get; set; }
+
+    [Inject]
+    private IStringStateService stringStateService { get; set; }
+
+    private async Task HandleSubmit()
+    {
+
+        
+
+        Console.WriteLine("Email Address: " + Name);
+        Console.WriteLine("Password: " + Password);
+        Console.WriteLine("Is Checked: " + IsChecked);
+
+        await GirisYap();
+    }
+
+    private async Task GirisYap()
+    {
+        var user = await Http.GetFromJsonAsync<User>($"https://localhost:7159/api/users/Login/{Name}");
+
+        if(user != null)
+        {
+            stringStateService.MyString = user.Id.ToString();
+            await localStorage.SetItemAsync<User>($"user", user);
+            Console.WriteLine("Giriş Başarılı");
+        }
+        else
+        {
+            Console.WriteLine("Giriş Başarısız");
+        }
+    }
+}
+

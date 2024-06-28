@@ -1,0 +1,68 @@
+﻿<div class="w-100 p-3">
+
+    @if(appState.Users != null)
+    {
+        if(appState.Users.Count > 0)
+        {
+            <div class="text-start">
+                <ul>
+                    @foreach(var category in appState.Users)
+                    {
+                        <li>@category.full_name</li>
+                    }
+                </ul>
+
+            </div>
+        }
+        else
+        {
+            <div class="spinner-border text-danger" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+    }
+
+    <div class="text-end">
+        <a href="" class="text-white" target="_blank">@toolValue</a>
+    </div>
+</div>
+
+
+@code {
+    [Inject]
+    public AppStateManager appState { get; set; }
+
+    public int toolValue { get; set; }
+    public List<User> Users { get; set; }
+
+    protected override void OnInitialized()
+    {
+        appState.StateChanged += async (source, property) => await AppState_StateChanged(source, property);
+        appState.SetUsers += async (source, property, category) => await AppState_SetCategory(source, property, category);
+    }
+
+    private async Task AppState_StateChanged(ComponentBase source, string property)
+    {
+        if(property == "setState")
+        {
+            toolValue++;
+            // UI'nin güncellenmesini sağlamak için:
+            StateHasChanged();
+        }
+    }
+
+    private async Task AppState_SetCategory(ComponentBase source, string property, List<User> users)
+    {
+        if(users != null)
+        {
+            if(property == "setUsers")
+            {
+                appState.Users = users;
+
+                // UI'nin güncellenmesini sağlamak için:
+                StateHasChanged();
+            }
+        }
+
+    }
+}

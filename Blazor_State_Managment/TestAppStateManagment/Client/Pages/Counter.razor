@@ -1,0 +1,44 @@
+﻿@page "/counter"
+
+<PageTitle>Counter</PageTitle>
+
+@if(appState.Users != null)
+{
+    <div class="p-3">
+        <div class="text-start">
+            <ul>
+                @foreach(var category in appState.Users)
+                {
+                    <li>@category.full_name</li>
+                }
+            </ul>
+
+        </div>
+        <div class="text-end">
+            <a href="" class="text-white" target="_blank">@toolValue</a>
+        </div>
+    </div>
+}
+
+
+@code {
+    [Inject]
+    public AppStateManager appState { get; set; }
+
+    public int toolValue { get; set; }
+
+    protected override void OnInitialized()
+    {
+        appState.StateChanged += async (source, property) => await AppState_StateChanged(source, property);
+    }
+
+    private async Task AppState_StateChanged(ComponentBase source, string property)
+    {
+        if(property == "setState")
+        {
+            toolValue++;
+            // UI'nin güncellenmesini sağlamak için:
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,90 @@
+﻿@page "/"
+
+
+@inject IJSRuntime JSRuntime
+@inject HttpClient HttpClient
+
+<h3>Blazor Page</h3>
+<form action="https://odeme.katre.com/hpm/" method="post" enctype="application/x-www-form-urlencoded" name="hpm-form">
+    <!-- Blazor tarafında kullanılacak değişkenler -->
+    <input type="hidden" @bind="UserVerify" />
+    <input type="hidden" @bind="UserVerifyFailAct" />
+    <input type="hidden" @bind="UserCode" />
+    <input type="hidden" @bind="UserId" />
+    <input type="hidden" @bind="UserFirstName" />
+    <input type="hidden" @bind="UserLastName" />
+    <input type="hidden" @bind="UserEmail" />
+    <input type="hidden" @bind="UserTCKN" />
+    <input type="hidden" @bind="UserPassword" />
+    <input type="hidden" @bind="OrderDateTime" />
+    <input type="hidden" @bind="OrderReference" />
+    <input type="hidden" @bind="TransactionPaysetId" />
+    <input type="hidden" @bind="PaymentMethod" />
+    <input type="hidden" @bind="PaymentAmount" />
+    <input type="hidden" @bind="PaymentAmntEdit" />
+    <input type="hidden" @bind="PaymentSuccessUrl" />
+    <input type="hidden" @bind="PaymentFailUrl" />
+    <input type="hidden" @bind="PaymentReturnUrl" />
+    <input type="hidden" @bind="PaymentHashMethod" />
+    <input type="hidden" @bind="PaymentHash" />
+
+    <button @onclick="GenerateHashAndSubmit">Gönder</button>
+</form>
+
+@code {
+    private int UserVerify = 1;
+    private int UserVerifyFailAct = 3;
+    private string UserCode = "1111";
+    private int UserId = 4;
+    private string UserFirstName = "Ecozum";
+    private string UserLastName = "Test";
+    private string UserEmail = "test@test.com";
+    private string UserTCKN = "55555555550";
+    private string UserPassword = "KullanıcıŞifre";
+    private string OrderDateTime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "Z";
+    private string OrderReference = "testpay1";
+    private int TransactionPaysetId = 14;
+    private int PaymentMethod = 1;
+    private decimal PaymentAmount = 1;
+    private int PaymentAmntEdit = 1;
+    private string PaymentSuccessUrl = "https://www.google.com/";
+    private string PaymentFailUrl = "https://yandex.com.tr/";
+    private string PaymentReturnUrl = "https://www.microsoft.com/tr-tr/";
+    private int PaymentHashMethod = 2;
+    private string PaymentHash;
+
+    private async Task GenerateHashAndSubmit()
+    {
+        // Hash oluşturma işlemleri
+        var text = $"{{${"ORDER.DATETIME"}$}}{OrderDateTime}{{${"ORDER.REFERENCE"}$}}{OrderReference}"; // Diğer alanları da ekleyin
+        PaymentHash = await JSRuntime.InvokeAsync<string>("generateHash", "pX5sT+dCn", text);
+
+        // Şimdi formu gönderme işlemlerini gerçekleştirin
+
+        // Form verilerini hazırlayın
+        var formContent = new FormUrlEncodedContent(new[]
+        {
+            new KeyValuePair<string, string>("USER.VERIFY", UserVerify.ToString()),
+            new KeyValuePair<string, string>("USER.VERIFYFAILACT", UserVerifyFailAct.ToString()),
+            new KeyValuePair<string, string>("USER.CODE", UserCode),
+            // Diğer form verilerini buraya ekleyin
+            new KeyValuePair<string, string>("HASH", PaymentHash)
+        });
+
+        // POST isteğini gönder ve yanıtı al
+        var response = await HttpClient.PostAsync("https://odeme.katre.com/hpm/", formContent);
+
+        // Yanıt başarılı mı kontrol et
+        if(response.IsSuccessStatusCode)
+        {
+            // Yanıtı oku
+            var responseData = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Response: {responseData}");
+        }
+        else
+        {
+            // Yanıt başarısızsa hata işleme ekle
+            Console.WriteLine($"Error: {response.StatusCode}");
+        }
+    }
+}

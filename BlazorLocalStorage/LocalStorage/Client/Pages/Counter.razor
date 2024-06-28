@@ -1,0 +1,36 @@
+﻿@page "/counter"
+@using LocalStorage.Client.Servisler.State
+@using LocalStorage.Shared
+@inject Blazored.LocalStorage.ILocalStorageService localStorage;
+
+<PageTitle>Counter</PageTitle>
+
+<h4>@User?.Ad</h4>
+<h4>@(Name ?? "Yok")</h4>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+    private int currentCount = 0;
+
+    public User User { get; set; }
+    public string Name { get; set; }
+
+    [Inject]
+    private IStringStateService stringStateService { get; set; }
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Name = stringStateService.MyString;
+        User = await localStorage.GetItemAsync<User>($"user");
+    }
+}

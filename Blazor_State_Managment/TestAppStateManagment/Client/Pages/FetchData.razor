@@ -1,0 +1,110 @@
+﻿@page "/fetchdata"
+@using TestAppStateManagment.Shared
+@inject HttpClient httpClient
+
+<PageTitle>Weather forecast</PageTitle>
+
+<h1>Weather forecast</h1>
+
+<p>This component demonstrates fetching data from the server.</p>
+
+<div class="my-2">
+    <input type="number" @bind="User.user_id" />
+    <input type="text" @bind="User.full_name" />
+    <input type="text" @bind="User.email" />
+    <input type="text" @bind="User.username" />
+    <button class="btn btn-dark" @onclick="()=>SetState()">Set State</button>
+</div>
+
+@if(appState.Users == null)
+{
+    <div class="spinner-border text-warning" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>user_id</th>
+                <th>full_name</th>
+                <th>username</th>
+                <th>email</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(User user in appState.Users)
+            {
+                <tr>
+                    <td>@user.user_id</td>
+                    <td>@user.full_name</td>
+                    <td>@user.username</td>
+                    <td>@user.email</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    public User User { get; set; } = new User();
+
+    [Inject]
+    public AppStateManager appState { get; set; }
+
+
+    void SetState()
+    {
+        if(User != null)
+        {
+            Task.FromResult(PostUser(User));
+        }
+
+        StateHasChanged();
+    }
+
+    async Task PostUser(User user)
+    {
+        User setUser = new User
+            {
+                user_id = user.user_id,
+                full_name = user.full_name,
+                email = user.email,
+                username = user.username
+            };
+
+        var response = await httpClient.PostAsJsonAsync("https://localhost:7197/api/Users/update", setUser);
+
+        if(response.IsSuccessStatusCode)
+        {
+            // POST dan gelen Veriyi Okuma
+            User getUser = await response.Content.ReadFromJsonAsync<User>();
+
+            if(getUser != null)
+            {
+                // STATE 'İ GÜNCELLEMEK İÇİN (Direk State'e Veri Ekliyoruz):
+                // appState.SetCategoryState(this, getUser);
+
+                // STATE 'İ GÜNCELLEMEK İÇİN (Component'e Veri Ekliyoruz):
+                var getRefreshUser = await httpClient.PostAsJsonAsync("https://localhost:7197/api/Users/getall?startPage=0&pageSize=50", "");
+
+                if(getRefreshUser.IsSuccessStatusCode)
+                {
+                    List<User> getRefreshUserResponse = await getRefreshUser.Content.ReadFromJsonAsync<List<User>>();
+                    appState.Users = getRefreshUserResponse;
+                }
+
+                StateHasChanged();
+            }
+            else
+            {
+                Console.WriteLine("Received user data is null.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Error occurred: " + response.StatusCode);
+        }
+    }
+}

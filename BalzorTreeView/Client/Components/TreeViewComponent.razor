@@ -1,0 +1,132 @@
+﻿@using DenemeTreeView.Client.Services
+@using System.Collections.Generic
+@using System.Linq
+@using System.Text
+@inject HttpClient _http;
+
+@if(Categories == null)
+{
+
+}
+else
+{
+
+    <div class="container overflow-auto">
+        <div class="row p-2 overflow-auto">
+
+
+            @foreach(var category in Categories)
+            {
+                @if(category?.kategoriaktif == 1 && int.Parse(category?.kategoriustid) == 0)
+                {
+                    <div class="col-12 p-2" @onclick="()=>toggleSubCategory(category)">
+
+                        <div class="d-flex justify-content-start align-items-center gap-3 mb-2">
+                            @if(category.kategorialtid == 1)
+                            {
+                                <span class="text-white text-lg fw-bold">
+                                    >
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="treeViewArrow text-lg fw-bold hidden">></span>
+                            }
+
+                            <span class="text-white">@category?.kategoriadi</span>
+                        </div>
+                    </div>
+
+
+                    @if(expandedCategoryId == int.Parse(category?.id))
+                    {
+                        @foreach(var subCategory in Categories)
+                        {
+                            @if(int.Parse(subCategory.kategoriustid) != 0 && category.id == subCategory.kategoriustid)
+                            {
+                                <p class="text-white ms-5">@subCategory.kategoriadi</p>
+                            }
+                        }
+
+                    }
+                }
+
+            }
+        </div>
+    </div>
+
+}
+
+@code {
+    [Parameter]
+    public List<KategoriListesiBilgileri> Categories { get; set; }
+    [Parameter]
+    public string Link { get; set; }
+    [Parameter]
+    public EventCallback<string> OnCategorySelected { get; set; }
+
+
+    protected override void OnInitialized()
+    {
+
+
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Sonuc<List<KategoriListesiBilgileri>> sonuc = await _http.GetFromJsonAsync<Sonuc<List<KategoriListesiBilgileri>>>("api/Category");
+
+        Categories = sonuc.data;
+
+    }
+
+    private int expandedCategoryId = -1; // Başlangıçta hiçbiri açık değil
+
+
+    private List<KategoriListesiBilgileri> GetSubCategories(int parentId)
+    {
+        return Categories.Where(c => int.Parse(c.kategoriustid) == parentId).ToList();
+    }
+
+    private bool HasSubCategories(int parentId)
+    {
+        return Categories.Any(c => int.Parse(c.kategoriustid) == parentId);
+    }
+
+    private string DisplaySubCategory(KategoriListesiBilgileri category)
+    {
+        List<KategoriListesiBilgileri> subCategories = GetSubCategories(int.Parse(category.id));
+        var deger = string.Empty;
+        if(subCategories.Any())
+        {
+            StringBuilder result = new StringBuilder();
+
+            // Her alt kategoriyi dolaşarak alt kategorilerin verisini ekliyoruz
+            foreach(var subCategory in subCategories)
+            {
+                result.Append(DisplaySubCategory(subCategory));
+            }
+
+            return result.ToString();
+        }
+        else
+        {
+            return string.Empty; // Alt kategori yoksa boş bir string döndürüyoruz
+        }
+    }
+
+    private void toggleSubCategory(KategoriListesiBilgileri category)
+    {
+        if(expandedCategoryId == int.Parse(category.id))
+        {
+            // Zaten açıksa kapat
+            expandedCategoryId = -1;
+        }
+        else
+        {
+            // Yeni bir kategoriye tıklandı, diğerlerini kapat ve bu kategoriyi aç
+            expandedCategoryId = int.Parse(category.id);
+        }
+    }
+}

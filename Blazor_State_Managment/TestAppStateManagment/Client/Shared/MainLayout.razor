@@ -1,0 +1,44 @@
+﻿@inherits LayoutComponentBase
+@inject HttpClient client
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+
+@code {
+
+    [Inject]
+    AppStateManager appState { get; set; }
+
+    List<User> users = new List<User>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender)
+        {
+            var response = await client.PostAsJsonAsync("https://localhost:7197/api/Users/getall?startPage=0&pageSize=300", "");
+
+            if(response.IsSuccessStatusCode)
+            {
+                users = await response.Content.ReadFromJsonAsync<List<User>>();
+            }
+
+            if(users != null)
+            {
+                appState.SetUsersState(this, users);
+
+            }
+
+        }
+    }
+}
